@@ -18,7 +18,9 @@ import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jdt.core.JavaCore;
 
+import com.carrotgarden.eclipse.fileinstall.Nature;
 import com.carrotgarden.eclipse.fileinstall.Plugin;
 
 /**
@@ -101,9 +103,23 @@ public class NatureUtil {
 			}
 			return project.hasNature(natureId);
 		} catch (final Throwable e) {
-			Plugin.logErr("Nature failure.", e);
+			Plugin.logErrr("Nature failure.", e);
 			return false;
 		}
+	}
+
+	/**
+	 * Verify project has java nature.
+	 */
+	public static boolean hasJavaNature(final IProject project) {
+		return hasNature(project, JavaCore.NATURE_ID);
+	}
+
+	/**
+	 * Verify project has plug-in nature.
+	 */
+	public static boolean hasPluginNature(final IProject project) {
+		return hasNature(project, Nature.NATURE_ID);
 	}
 
 }

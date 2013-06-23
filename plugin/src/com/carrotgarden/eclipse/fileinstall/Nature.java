@@ -12,7 +12,7 @@ import org.eclipse.core.resources.IProjectNature;
 import org.eclipse.core.runtime.CoreException;
 
 /**
- * Plugin project natrue.
+ * Plug-in project nature.
  */
 public class Nature implements IProjectNature {
 
@@ -21,16 +21,19 @@ public class Nature implements IProjectNature {
 	 */
 	public static final String NATURE_ID = "com.carrotgarden.eclipse.fileinstall.nature";
 
+	/**
+	 * Adapted resource project.
+	 */
 	private volatile IProject project;
 
 	@Override
 	public void configure() throws CoreException {
-		Plugin.logInfo("Nature activate for " + getProject());
+		Plugin.logInfo("Nature#configure  : " + getProject());
 	}
 
 	@Override
 	public void deconfigure() throws CoreException {
-		Plugin.logInfo("Nature deactivate for " + getProject());
+		Plugin.logInfo("Nature#deconfigure : " + getProject());
 	}
 
 	@Override

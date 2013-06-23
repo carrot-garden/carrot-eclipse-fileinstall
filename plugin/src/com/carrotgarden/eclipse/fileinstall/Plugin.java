@@ -7,11 +7,17 @@
  */
 package com.carrotgarden.eclipse.fileinstall;
 
+import java.io.PrintWriter;
+
+import org.eclipse.core.runtime.ILogListener;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.ui.IStartup;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
+
+import com.carrotgarden.eclipse.fileinstall.util.ConsoleUtil;
+import com.carrotgarden.eclipse.fileinstall.util.ConsoleUtil.Console;
 
 /**
  * Plug-in for eclipse + fileinstall integration.
@@ -19,14 +25,14 @@ import org.osgi.framework.BundleContext;
 public class Plugin extends AbstractUIPlugin implements IStartup {
 
 	/**
-	 * Permanent plugin GUID.
-	 */
-	public static final String PLUGIN_ID = "com.carrotgarden.eclipse.fileinstall.plugin";
-
-	/**
 	 * Plug-in singleton instance.
 	 */
 	private static volatile Plugin PLUGIN;
+
+	/**
+	 * Permanent plugin GUID.
+	 */
+	public static final String PLUGIN_ID = "com.carrotgarden.eclipse.fileinstall.plugin";
 
 	/**
 	 * Plug-in singleton instance.
@@ -50,7 +56,7 @@ public class Plugin extends AbstractUIPlugin implements IStartup {
 	/**
 	 * Log eclipse error.
 	 */
-	public static void logErr(final String message, final Throwable exception) {
+	public static void logErrr(final String message, final Throwable exception) {
 		final IStatus status = new Status(IStatus.ERROR, Plugin.PLUGIN_ID, 0,
 				message, exception);
 		log(status);
@@ -66,6 +72,15 @@ public class Plugin extends AbstractUIPlugin implements IStartup {
 	}
 
 	/**
+	 * Log eclipse debugging.
+	 */
+	public static void logOK(final String message) {
+		final IStatus status = new Status(IStatus.OK, Plugin.PLUGIN_ID, 0,
+				message, null);
+		log(status);
+	}
+
+	/**
 	 * Log eclipse warning.
 	 */
 	public static void logWarn(final String message) {
@@ -74,12 +89,33 @@ public class Plugin extends AbstractUIPlugin implements IStartup {
 		log(status);
 	}
 
+	private volatile BundleContext context;
+
+	/**
+	 * Plug-in console.
+	 */
+	private final Console logConsole = ConsoleUtil.console("fileinstall");
+
+	/**
+	 * Plug-in console listener.
+	 */
+	private final ILogListener logListener = new ILogListener() {
+		@Override
+		public void logging(final IStatus status, final String plugin) {
+			logWrier.println(ConsoleUtil.render(status));
+			logWrier.flush();
+		}
+	};
+
+	/**
+	 * Plug-in console writer.
+	 */
+	private final PrintWriter logWrier = new PrintWriter(logConsole.out);
+
 	/**
 	 * Plug-in business logic.
 	 */
 	private final Manager manager = new Manager();
-
-	private volatile BundleContext context;
 
 	/**
 	 * Required public constructor.
@@ -94,6 +130,11 @@ public class Plugin extends AbstractUIPlugin implements IStartup {
 		return context;
 	}
 
+	@Override
+	public void earlyStartup() {
+		/** Plug-in starts after eclipse UI. */
+	}
+
 	/**
 	 * Plug-in business logic.
 	 */
@@ -106,6 +147,7 @@ public class Plugin extends AbstractUIPlugin implements IStartup {
 		super.start(context);
 		this.context = context;
 		PLUGIN = this;
+		PLUGIN.getLog().addLogListener(logListener);
 		logInfo("plugin start");
 		manager.start();
 	}
@@ -114,14 +156,10 @@ public class Plugin extends AbstractUIPlugin implements IStartup {
 	public void stop(final BundleContext context) throws Exception {
 		manager.stop();
 		logInfo("plugin stop");
+		PLUGIN.getLog().removeLogListener(logListener);
 		super.stop(context);
 		PLUGIN = null;
 		this.context = null;
-	}
-
-	@Override
-	public void earlyStartup() {
-		/** Plug-in starts after eclipse UI. */
 	}
 
 }

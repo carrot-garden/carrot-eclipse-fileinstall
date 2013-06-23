@@ -13,9 +13,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.apache.commons.io.IOUtils;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaCore;
 
 import com.carrotgarden.eclipse.fileinstall.Plugin;
 
@@ -79,13 +83,68 @@ public class ProjectUtil {
 		try {
 			final int severity = project.findMaxProblemSeverity(
 					IMarker.PROBLEM, true, IResource.DEPTH_INFINITE);
-			Plugin.logInfo("severity = " + severity + " @ " + project);
+			// Plugin.logInfo("ProjectUtil#severity = " + severity + " @ "
+			// + project);
 			return severity;
 		} catch (final Throwable e) {
-			Plugin.logErr("Severity failure.", e);
+			Plugin.logErrr("ProjectUtil#severity failure", e);
 			return IMarker.SEVERITY_ERROR;
 		}
 
+	}
+
+	/**
+	 * Manifest file name.
+	 */
+	public static final String MANIFEST_FILE = //
+	"MANIFEST.MF";
+
+	/**
+	 * Manifest location on class path.
+	 */
+	public static final String MANIFEST_PATH = //
+	"META-INF" + "/" + MANIFEST_FILE;
+
+	/**
+	 * Location of build manifest in the maven project.
+	 */
+	public static final String MANIFEST_MAVEN = //
+	"target/classes" + "/" + MANIFEST_PATH;
+
+	/**
+	 * Report project manifest file; can be missing.
+	 */
+	public static File manifest(final IProject project) {
+		final File file = manifestDiscover(project);
+		Plugin.logOK("ProjectUtil#manifest: file: " + file);
+		return file;
+	}
+
+	/**
+	 * Discover project manifest from multiple locations.
+	 */
+	private static File manifestDiscover(final IProject project) {
+		if (NatureUtil.hasJavaNature(project)) {
+			try {
+				final IJavaProject java = JavaCore.create(project);
+				final IPath output = java.getOutputLocation().makeRelativeTo(
+						project.getFullPath());
+				final IFile manifest = project.getFolder(output).getFile(
+						MANIFEST_PATH);
+				return manifest.getLocation().toFile();
+			} catch (final Throwable e) {
+				Plugin.logErrr("ProjectUtil#manifest: failure", e);
+				return manifestDefault(project);
+			}
+		}
+		return manifestDefault(project);
+	}
+
+	/**
+	 * Defautl manifest location.
+	 */
+	private static File manifestDefault(final IProject project) {
+		return file(project, MANIFEST_MAVEN);
 	}
 
 }

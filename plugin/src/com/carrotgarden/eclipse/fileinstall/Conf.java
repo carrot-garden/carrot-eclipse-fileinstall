@@ -7,21 +7,61 @@
  */
 package com.carrotgarden.eclipse.fileinstall;
 
-import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Properties;
 
+import com.carrotgarden.eclipse.fileinstall.util.ConfUtil;
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigRenderOptions;
-import com.typesafe.config.ConfigValue;
 
 /**
  * Plug-in configuration settings.
  */
 public class Conf {
+
+	/**
+	 * Worker project validity checks.
+	 */
+	public interface Check {
+
+		/** # verify target deploy folder is present */
+		public boolean eclipseCheckIsMasterDeployPresent();
+
+		/** # verify target project launch config is running */
+		public boolean eclipseCheckIsMasterLaunchRunning();
+
+		/** # verify project is compiled w/o errors */
+		public boolean eclipseCheckIsWorkerBuildSuccess();
+
+		/** # verify META-INF/MANIFEST.MF is present in target/classes */
+		public boolean eclipseCheckIsWorkerManifestPresent();
+
+	}
+
+	private class CheckImpl implements Check {
+
+		@Override
+		public boolean eclipseCheckIsMasterDeployPresent() {
+			return config.getBoolean("eclipse.check.is-master-deploy-present");
+		}
+
+		@Override
+		public boolean eclipseCheckIsMasterLaunchRunning() {
+			return config.getBoolean("eclipse.check.is-master-launch-running");
+		}
+
+		@Override
+		public boolean eclipseCheckIsWorkerBuildSuccess() {
+			return config.getBoolean("eclipse.check.is-worker-build-success");
+		}
+
+		@Override
+		public boolean eclipseCheckIsWorkerManifestPresent() {
+			return config
+					.getBoolean("eclipse.check.is-worker-manifest-present");
+		}
+
+	}
 
 	/** Configuration file delivered on class path. */
 	public static final String KLAZ_FILE = "eclipse-fileinstall.conf";
@@ -34,43 +74,34 @@ public class Conf {
 	public static final String PROJ_PATH = "/" + PROJ_FILE;
 
 	/** Configuration variable substitution. */
-	public static final String VAR_WORKSPACE = "@{eclipse-workspace}";
+	public static final String VAR_PROJECT_NAME = "@{eclipse-project-name}";
 	/** Configuration variable substitution. */
-	public static final String VAR_PROJECT = "@{eclipse-project}";
+	public static final String VAR_PROJECT_PATH = "@{eclipse-project-path}";
+	/** Configuration variable substitution. */
+	public static final String VAR_WORKSPACE = "@{eclipse-workspace}";
 
 	/**
-	 * Render as annotated properties file.
+	 * Build variable substitution.
 	 */
-	final static ConfigRenderOptions options = ConfigRenderOptions.defaults()
-			.setComments(true) //
-			.setOriginComments(true) //
-			.setFormatted(true) //
-			.setJson(false);
+	public static Map<String, String> variables(final String workspace,
+			final String name, final String path) {
+		final Map<String, String> map = new HashMap<String, String>();
+		map.put(VAR_WORKSPACE, workspace);
+		map.put(VAR_PROJECT_NAME, name);
+		map.put(VAR_PROJECT_PATH, path);
+		return map;
+	}
 
-	final Config config;
+	private final Check check = new CheckImpl();
+
+	private final Config config;
 
 	public Conf(final Config config) {
 		this.config = config;
 	}
 
-	/** # verify project is compiled w/o errors */
-	public boolean eclipseCheckIsBuildSuccess() {
-		return config.getBoolean("eclipse.check.is-build-success");
-	}
-
-	/** # verify target deploy folder is present */
-	public boolean eclipseCheckIsDeployPresent() {
-		return config.getBoolean("eclipse.check.is-deploy-present");
-	}
-
-	/** # verify target project launch config is running */
-	public boolean eclipseCheckIsLaunchRunningPresent() {
-		return config.getBoolean("eclipse.check.is-launch-running");
-	}
-
-	/** # verify META-INF/MANIFEST.MF is present in target/classes */
-	public boolean eclipseCheckIsManifestPresent() {
-		return config.getBoolean("eclipse.check.is-manifest-present");
+	public Check check() {
+		return check;
 	}
 
 	/** # list of monitored dependency projects */
@@ -94,30 +125,7 @@ public class Conf {
 
 	/** # prototype configuration */
 	public String fileinstallTemplate() {
-		/** Render as flat properties. */
-		final Properties props = new Properties();
-		final Config conf = config.getConfig("fileinstall.template");
-		for (final Entry<String, ConfigValue> entry : conf.entrySet()) {
-			props.put(entry.getKey(), entry.getValue().unwrapped().toString());
-		}
-		final ByteArrayOutputStream output = new ByteArrayOutputStream();
-		try {
-			props.store(output, "Auto generated, do not change.");
-		} catch (final Throwable e) {
-			Plugin.logErr("Store failure.", e);
-		}
-		return output.toString();
-	}
-
-	/**
-	 * Build variable substitution.
-	 */
-	public static Map<String, String> variables(final String workspace,
-			final String worker) {
-		final Map<String, String> map = new HashMap<String, String>();
-		map.put(VAR_PROJECT, worker);
-		map.put(VAR_WORKSPACE, workspace);
-		return map;
+		return ConfUtil.flatFile(config.getConfig("fileinstall.template"));
 	}
 
 }

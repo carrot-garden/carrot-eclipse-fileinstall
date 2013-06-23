@@ -50,7 +50,7 @@ public class ProjectUpdateAction extends BaseAction {
 
 				} catch (final Throwable e) {
 
-					Plugin.logErr("Project update failure.", e);
+					Plugin.logErrr("Project update failure.", e);
 
 				} finally {
 					monitor.done();

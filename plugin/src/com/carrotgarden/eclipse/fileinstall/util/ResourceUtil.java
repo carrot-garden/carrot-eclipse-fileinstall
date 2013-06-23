@@ -23,6 +23,9 @@ public class ResourceUtil {
 		return workspaceRoot().getLocation().toFile().getAbsolutePath();
 	}
 
+	/**
+	 * Workspace root.
+	 */
 	public static IWorkspaceRoot workspaceRoot() {
 		return ResourcesPlugin.getWorkspace().getRoot();
 	}
@@ -35,6 +38,13 @@ public class ResourceUtil {
 	}
 
 	/**
+	 * Project path.
+	 */
+	public static String projectPath(final String name) {
+		return project(name).getLocation().toFile().getAbsolutePath();
+	}
+
+	/**
 	 * Verify if project exists.
 	 */
 	public static boolean hasProject(final String name) {
@@ -42,7 +52,7 @@ public class ResourceUtil {
 	}
 
 	/**
-	 * Verify if project open.
+	 * Verify if project is open.
 	 */
 	public static boolean hasProjectOpen(final String name) {
 		final IProject project = project(name);

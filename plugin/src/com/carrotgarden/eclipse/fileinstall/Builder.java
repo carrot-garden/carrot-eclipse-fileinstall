@@ -22,7 +22,7 @@ public class Builder extends CompilationParticipant {
 			return false;
 		}
 		/** React only to registered worker projects. */
-		return instance.manager().containsWorker(project);
+		return instance.manager().hasWorker(project);
 	}
 
 	@Override

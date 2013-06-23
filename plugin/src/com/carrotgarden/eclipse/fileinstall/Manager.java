@@ -23,8 +23,10 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.JavaCore;
 
+import com.carrotgarden.eclipse.fileinstall.Conf.Check;
+import com.carrotgarden.eclipse.fileinstall.Project.Change;
+import com.carrotgarden.eclipse.fileinstall.util.ConfUtil;
 import com.carrotgarden.eclipse.fileinstall.util.EclipseRunnable;
 import com.carrotgarden.eclipse.fileinstall.util.EventUtil;
 import com.carrotgarden.eclipse.fileinstall.util.JobUtil;
@@ -37,22 +39,15 @@ import com.carrotgarden.eclipse.fileinstall.util.ResourceUtil;
 public class Manager {
 
 	/**
-	 * Worker project update mode.
-	 */
-	enum Mode {
-		ENABLE, //
-		DISABLE, //
-	}
-
-	/**
 	 * Mater projects: projects with plug-in nature.
 	 */
-	final ConcurrentMap<String, Project> masterMap = new ConcurrentHashMap<String, Project>();
+	private final ConcurrentMap<String, Project.Master> //
+	masterMap = new ConcurrentHashMap<String, Project.Master>();
 
 	/**
 	 * Project change listener.
 	 */
-	final IResourceChangeListener projectListener = new IResourceChangeListener() {
+	private final IResourceChangeListener projectListener = new IResourceChangeListener() {
 		@Override
 		public void resourceChanged(final IResourceChangeEvent event) {
 
@@ -78,7 +73,7 @@ public class Manager {
 	/**
 	 * Project post-change visitor.
 	 */
-	final IResourceDeltaVisitor projectVisitor = new IResourceDeltaVisitor() {
+	private final IResourceDeltaVisitor projectVisitor = new IResourceDeltaVisitor() {
 
 		@Override
 		public boolean visit(final IResourceDelta delta) throws CoreException {
@@ -118,7 +113,8 @@ public class Manager {
 	/**
 	 * Worker projects: dependency for master projects.
 	 */
-	final ConcurrentMap<String, Project> workerMap = new ConcurrentHashMap<String, Project>();
+	private final ConcurrentMap<String, Project.Worker> //
+	workerMap = new ConcurrentHashMap<String, Project.Worker>();
 
 	/**
 	 * Handle worker build result.
@@ -127,39 +123,52 @@ public class Manager {
 	 */
 	public void buildFinished(final IJavaProject java) {
 		final String name = java.getProject().getName();
-		final Project worker = workerMap.get(name);
+		final Project.Worker worker = workerMap.get(name);
 		if (worker == null) {
 			return;
 		}
-		switch (worker.change()) {
-		case POSITIVE:
-			handleUpdate(worker.project(), Mode.ENABLE);
-			break;
-		case NEGATIVE:
-			handleUpdate(worker.project(), Mode.DISABLE);
-			break;
+		handleUpdate(worker);
+	}
+
+	/**
+	 * Collect check poll from masters.
+	 */
+	private Conf.Check check() {
+
+		final ConfUtil.CheckCount total = new ConfUtil.CheckCount();
+
+		for (final Project.Master master : masterMap.values()) {
+			final Check check = master.conf().check();
+			if (check.eclipseCheckIsMasterDeployPresent()) {
+				total.eclipseCheckIsMasterDeployPresent++;
+			}
+			if (check.eclipseCheckIsMasterLaunchRunning()) {
+				total.eclipseCheckIsMasterLaunchRunning++;
+			}
+			if (check.eclipseCheckIsWorkerBuildSuccess()) {
+				total.eclipseCheckIsWorkerBuildSuccess++;
+			}
+			if (check.eclipseCheckIsWorkerManifestPresent()) {
+				total.eclipseCheckIsWorkerManifestPresent++;
+			}
 		}
-	}
 
-	public boolean containsWorker(final IJavaProject java) {
-		return workerMap.containsKey(java.getProject().getName());
-	}
-
-	public boolean contanisMaster(final IProject project) {
-		return masterMap.containsKey(project.getName());
+		return total;
 	}
 
 	/**
 	 * Handle master/worker activate.
 	 */
 	public void handleCreate(final IProject project) {
-		JobUtil.schedule(new EclipseRunnable("Handle activate.") {
+		JobUtil.schedule(new EclipseRunnable("Manager handle activate.") {
 			@Override
 			public void doit(final IProgressMonitor monitor)
 					throws CoreException {
 
-				monitor.beginTask("Activate " + project, 2);
-				Plugin.logInfo("activate = " + project);
+				final String message = "Manager#handleCreate " + project;
+
+				monitor.beginTask(message, 2);
+				Plugin.logInfo(message);
 
 				masterCreate(project);
 				monitor.worked(1);
@@ -177,13 +186,15 @@ public class Manager {
 	 * Handle master/worker deactivate.
 	 */
 	public void handleDelete(final IProject project) {
-		JobUtil.schedule(new EclipseRunnable("Handle deactivate.") {
+		JobUtil.schedule(new EclipseRunnable("Manager handle deactivate.") {
 			@Override
 			public void doit(final IProgressMonitor monitor)
 					throws CoreException {
 
-				monitor.beginTask("Deactivate " + project, 2);
-				Plugin.logInfo("deactivate = " + project);
+				final String message = "Manager#handleDelete " + project;
+
+				monitor.beginTask(message, 2);
+				Plugin.logInfo(message);
 
 				masterDelete(project);
 				monitor.worked(1);
@@ -197,27 +208,20 @@ public class Manager {
 	}
 
 	/**
-	 * Handle worker update.
+	 * Handle worker activate/deactivate job.
 	 */
-	void handleUpdate(final IProject project, final Mode mode) {
-		JobUtil.schedule(new EclipseRunnable("Handle update.") {
+	private void handleUpdate(final Project.Worker worker) {
+		JobUtil.schedule(new EclipseRunnable("Manager handle update.") {
 			@Override
 			public void doit(final IProgressMonitor monitor)
 					throws CoreException {
 
-				monitor.beginTask("Update " + project, 1);
-				Plugin.logInfo("update = " + mode + "/" + project);
+				final String message = "Manager#handleUpdate: worker: "
+						+ worker;
+				monitor.beginTask(message, 1);
+				Plugin.logInfo(message);
 
-				final String name = project.getName();
-
-				switch (mode) {
-				case ENABLE:
-					workerActivate(name);
-					break;
-				case DISABLE:
-					workerDeactivate(name);
-					break;
-				}
+				workerUpdate(worker);
 
 				monitor.done();
 			}
@@ -225,25 +229,48 @@ public class Manager {
 		});
 	}
 
+	public boolean hasMaster(final IProject project) {
+		return masterMap.containsKey(project.getName());
+	}
+
+	public boolean hasWorker(final IJavaProject java) {
+		return workerMap.containsKey(java.getProject().getName());
+	}
+
+	/**
+	 * Verify if worker is required by known master.
+	 */
+	private boolean isWorkerRequired(final String workerName) {
+		for (final Project.Master master : masterMap.values()) {
+			final List<String> eclipseList = master.conf().eclipseList();
+			if (eclipseList.contains(workerName)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/**
 	 * Create master project.
 	 */
-	void masterCreate(final IProject project) {
+	private void masterCreate(final IProject project) {
 		final String name = project.getName();
-		if (hasPluginNature(project)) {
+		if (NatureUtil.hasPluginNature(project)) {
 
-			Project master = masterMap.get(name);
+			Project.Master master = masterMap.get(name);
 			if (master == null) {
-				masterMap.putIfAbsent(name, new Project(project));
+				masterMap.putIfAbsent(name, new Project.Master(project));
 				master = masterMap.get(name);
-				Plugin.logInfo("master create = " + master);
+				Plugin.logInfo("Manager#masterCreate: new: " + master);
 			} else {
-				Plugin.logInfo("master exists = " + master);
+				Plugin.logInfo("Manager#masterCreate: old: " + master);
 				return;
 			}
 
+			/** Create master fileinstall.cfg. */
 			master.confCreate();
 
+			/** Update present worker projects. */
 			for (final String workerName : master.conf().eclipseList()) {
 				final IProject worker = ResourceUtil.project(workerName);
 				if (worker.exists()) {
@@ -256,27 +283,13 @@ public class Manager {
 	/**
 	 * Delete master project.
 	 */
-	void masterDelete(final IProject project) {
+	private void masterDelete(final IProject project) {
 		final String name = project.getName();
-		final Project master = masterMap.remove(name);
+		final Project.Master master = masterMap.remove(name);
 		if (master != null) {
 			master.confDelete();
-			Plugin.logInfo("master delete = " + master);
+			Plugin.logInfo("Manager#masterDelete: " + master);
 		}
-	}
-
-	/**
-	 * Verify project has java nature.
-	 */
-	boolean hasJavaNature(final IProject project) {
-		return NatureUtil.hasNature(project, JavaCore.NATURE_ID);
-	}
-
-	/**
-	 * Verify project has plug-in nature.
-	 */
-	boolean hasPluginNature(final IProject project) {
-		return NatureUtil.hasNature(project, Nature.NATURE_ID);
 	}
 
 	/**
@@ -296,7 +309,7 @@ public class Manager {
 		 */
 		final IProject[] projectList = workspace.getRoot().getProjects();
 		for (final IProject project : projectList) {
-			if (hasPluginNature(project)) {
+			if (NatureUtil.hasPluginNature(project)) {
 				handleCreate(project);
 			}
 		}
@@ -317,7 +330,7 @@ public class Manager {
 		 */
 		final IProject[] projectList = workspace.getRoot().getProjects();
 		for (final IProject project : projectList) {
-			if (hasPluginNature(project)) {
+			if (NatureUtil.hasPluginNature(project)) {
 				handleDelete(project);
 			}
 		}
@@ -330,42 +343,36 @@ public class Manager {
 	/**
 	 * Add worker to matching masters, report if any match.
 	 */
-	boolean workerActivate(final String workerName) {
+	private boolean workerActivate(final String workerName) {
 		int count = 0;
-		for (final Project master : masterMap.values()) {
+		for (final Project.Master master : masterMap.values()) {
 			final List<String> eclipseList = master.conf().eclipseList();
 			if (eclipseList.contains(workerName)) {
 				master.confCreate(workerName);
 				count++;
 			}
 		}
-		Plugin.logInfo("worker activate = " + count + " /" + workerName);
+		Plugin.logInfo("Manager#workerActivate " + count + " / " + workerName);
 		return count > 0;
 	}
 
 	/**
 	 * Create worker project.
 	 */
-	void workerCreate(final IProject project) {
+	private void workerCreate(final IProject project) {
 		final String name = project.getName();
-		if (hasJavaNature(project) && isWorkerRequired(name)) {
+		if (NatureUtil.hasJavaNature(project) && isWorkerRequired(name)) {
 
-			Project worker = workerMap.get(name);
+			Project.Worker worker = workerMap.get(name);
 			if (worker == null) {
-				workerMap.putIfAbsent(name, new Project(project));
+				workerMap.putIfAbsent(name, new Project.Worker(project));
 				worker = workerMap.get(name);
-				Plugin.logInfo("worker create = " + worker);
+				Plugin.logInfo("Manager#workerCreate: new: " + worker);
 			} else {
-				Plugin.logInfo("worker exists = " + worker);
+				Plugin.logInfo("Manager#workerCreate: old: " + worker);
 			}
 
-			worker.change();
-
-			if (worker.isPositive()) {
-				workerActivate(name);
-			} else {
-				workerDeactivate(name);
-			}
+			workerUpdate(worker);
 
 		}
 	}
@@ -373,42 +380,96 @@ public class Manager {
 	/**
 	 * Remove worker from matching masters, report if any match.
 	 */
-	boolean workerDeactivate(final String workerName) {
+	private boolean workerDeactivate(final String workerName) {
 		int count = 0;
-		for (final Project master : masterMap.values()) {
+		for (final Project.Master master : masterMap.values()) {
 			final List<String> eclipseList = master.conf().eclipseList();
 			if (eclipseList.contains(workerName)) {
 				master.confDelete(workerName);
 				count++;
 			}
 		}
-		Plugin.logInfo("worker deactivate = " + count + " /" + workerName);
+		Plugin.logInfo("Manager#workerDeactivate " + count + " / " + workerName);
 		return count > 0;
 	}
 
 	/**
 	 * Delete worker project.
 	 */
-	void workerDelete(final IProject project) {
+	private void workerDelete(final IProject project) {
 		final String name = project.getName();
 		final Project worker = workerMap.remove(name);
 		if (worker != null) {
 			workerDeactivate(name);
-			Plugin.logInfo("worker delete = " + worker);
+			Plugin.logInfo("Manager#workerDelete " + worker);
 		}
 	}
 
 	/**
-	 * Verify if worker is required by known master.
+	 * Process worker update.
 	 */
-	boolean isWorkerRequired(final String workerName) {
-		for (final Project master : masterMap.values()) {
-			final List<String> eclipseList = master.conf().eclipseList();
-			if (eclipseList.contains(workerName)) {
-				return true;
+	private void workerUpdate(final Project.Worker worker) {
+
+		final String name = worker.name();
+
+		final Change manifest = worker.manifestChange();
+		final Change severity = worker.severityChange();
+
+		if (manifest == Change.UNCHANGED && severity == Change.UNCHANGED) {
+			Plugin.logOK("Manager#workerUpdate: unchanged: " + worker);
+			return;
+		}
+
+		final Check check = check();
+
+		int countPositive = 0;
+		int countNegative = 0;
+
+		if (check.eclipseCheckIsWorkerBuildSuccess()) {
+			switch (severity) {
+			case POSITIVE:
+				countPositive++;
+				Plugin.logOK("Manager#workerUpdate: build success: " + worker);
+				break;
+			case NEGATIVE:
+				Plugin.logOK("Manager#workerUpdate: build failure: " + worker);
+				countNegative++;
+				break;
 			}
 		}
-		return false;
+
+		if (check.eclipseCheckIsWorkerManifestPresent()) {
+			switch (manifest) {
+			case POSITIVE:
+				Plugin.logOK("Manager#workerUpdate: manifest present: "
+						+ worker);
+				countPositive++;
+				break;
+			case NEGATIVE:
+				Plugin.logOK("Manager#workerUpdate: manifest missing: "
+						+ worker);
+				countNegative++;
+				break;
+			}
+		}
+
+		if (countPositive == 0 && countNegative == 0) {
+			Plugin.logOK("Manager#workerUpdate: change ignored: " + worker);
+			return;
+		}
+
+		if (countNegative > 0) {
+			Plugin.logOK("Manager#workerUpdate: change negative: " + worker);
+			workerDeactivate(name);
+			return;
+		}
+
+		if (countPositive > 0) {
+			Plugin.logOK("Manager#workerUpdate: change positive: " + worker);
+			workerActivate(name);
+			return;
+		}
+
 	}
 
 }

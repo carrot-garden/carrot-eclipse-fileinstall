@@ -251,21 +251,21 @@ public class EventUtil {
 	public static void accept(final IResourceChangeEvent event,
 			final IResourceDeltaVisitor visitor) {
 		if (event == null) {
-			Plugin.logWarn("event == null");
+			Plugin.logWarn("EventUtil#accept: event == null");
 			return;
 		}
 		if (event.getDelta() == null) {
-			Plugin.logWarn("event.getDelta() == null");
+			Plugin.logWarn("EventUtil#accept: event.getDelta() == null");
 			return;
 		}
 		if (visitor == null) {
-			Plugin.logWarn("visitor == null");
+			Plugin.logWarn("EventUtil#accept: visitor == null");
 			return;
 		}
 		try {
 			event.getDelta().accept(visitor);
 		} catch (final Throwable e) {
-			Plugin.logErr("Accept failure.", e);
+			Plugin.logErrr("EventUtil#accept: failure", e);
 		}
 	}
 

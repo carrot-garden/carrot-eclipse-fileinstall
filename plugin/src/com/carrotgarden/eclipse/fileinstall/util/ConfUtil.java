@@ -7,15 +7,20 @@
  */
 package com.carrotgarden.eclipse.fileinstall.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Properties;
 
 import org.eclipse.core.resources.IProject;
 
 import com.carrotgarden.eclipse.fileinstall.Conf;
+import com.carrotgarden.eclipse.fileinstall.Plugin;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigRenderOptions;
+import com.typesafe.config.ConfigValue;
 
 /**
  * Typesafe config helper.
@@ -23,48 +28,51 @@ import com.typesafe.config.ConfigFactory;
 public class ConfUtil {
 
 	/**
-	 * Unresolved master configuration with plugin fall-back.
+	 * Total check counter.
+	 */
+	public static class CheckCount implements Conf.Check {
+
+		public volatile int eclipseCheckIsMasterDeployPresent;
+		public volatile int eclipseCheckIsMasterLaunchRunning;
+		public volatile int eclipseCheckIsWorkerBuildSuccess;
+		public volatile int eclipseCheckIsWorkerManifestPresent;
+
+		@Override
+		public boolean eclipseCheckIsMasterDeployPresent() {
+			return eclipseCheckIsMasterDeployPresent > 0;
+		}
+
+		@Override
+		public boolean eclipseCheckIsMasterLaunchRunning() {
+			return eclipseCheckIsMasterLaunchRunning > 0;
+		}
+
+		@Override
+		public boolean eclipseCheckIsWorkerBuildSuccess() {
+			return eclipseCheckIsWorkerBuildSuccess > 0;
+		}
+
+		@Override
+		public boolean eclipseCheckIsWorkerManifestPresent() {
+			return eclipseCheckIsWorkerManifestPresent > 0;
+		}
+
+	}
+
+	/**
+	 * Render as annotated properties file.
+	 */
+	public final static ConfigRenderOptions options = ConfigRenderOptions
+			.defaults().setComments(true) //
+			.setOriginComments(true) //
+			.setFormatted(true) //
+			.setJson(false);
+
+	/**
+	 * Unresolved master configuration with plug-in fall-back.
 	 */
 	public static Config config(final IProject master) {
 		return configProj(master).withFallback(configPlug());
-	}
-
-	public static Config config(final IProject master, final IProject worker)
-			throws Exception {
-
-		final String eclipseWorkspace = master.getWorkspace().getRoot()
-				.getLocation().toFile().getAbsolutePath();
-		final String eclipseProject = worker.getName();
-
-		final Map<String, String> substitution = new HashMap<String, String>();
-		substitution.put(Conf.VAR_WORKSPACE, eclipseWorkspace);
-		substitution.put(Conf.VAR_PROJECT, eclipseProject);
-
-		return config(master, substitution);
-	}
-
-	public static Config config(final IProject master,
-			final Map<String, String> substitution) throws Exception {
-		final String configProject = configProject(master, substitution);
-		final String configReference = configPlugin(substitution);
-		return ConfigFactory.parseString(configProject).withFallback(
-				ConfigFactory.parseString(configReference));
-	}
-
-	public static Config configProj(final IProject master) {
-		final File file = ProjectUtil.file(master, Conf.PROJ_PATH);
-		return ConfigFactory.parseFile(file);
-	}
-
-	public static String configProject(final IProject master) throws Exception {
-		final File file = ProjectUtil.file(master, Conf.PROJ_PATH);
-		final String text = FileUtil.readTextFile(file);
-		return text;
-	}
-
-	public static String configProject(final IProject master,
-			final Map<String, String> substitution) throws Exception {
-		return replace(configProject(master), substitution);
 	}
 
 	public static Config configPlug() {
@@ -72,15 +80,32 @@ public class ConfUtil {
 				Conf.KLAZ_PATH);
 	}
 
-	public static String configPlugin() throws Exception {
-		final String text = FileUtil.readTextResource(ProjectUtil.class,
-				Conf.KLAZ_PATH);
-		return text;
+	public static Config configProj(final IProject master) {
+		final File file = ProjectUtil.file(master, Conf.PROJ_PATH);
+		return ConfigFactory.parseFile(file);
 	}
 
-	public static String configPlugin(final Map<String, String> substitution)
-			throws Exception {
-		return replace(configPlugin(), substitution);
+	/**
+	 * Render config as flat key=value properties text.
+	 */
+	public static String flatFile(final Config config) {
+
+		final Properties props = new Properties();
+
+		for (final Entry<String, ConfigValue> entry : config.entrySet()) {
+			props.put(entry.getKey(), entry.getValue().unwrapped().toString());
+		}
+
+		final ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+		try {
+			props.store(output, "Auto generated, do not change.");
+		} catch (final Throwable e) {
+			Plugin.logErrr("ConfUtil#flatFile: failure", e);
+		}
+
+		return output.toString();
+
 	}
 
 	public static String replace(String text, final Map<String, String> map) {

@@ -25,6 +25,9 @@ public class FileUtil {
 
 	private static final Charset UTF_8 = Charset.forName("UTF-8");
 
+	/**
+	 * Read UTF-8 text from class path.
+	 */
 	public static <T> String readTextResource(final Class<?> klaz,
 			final String resource) throws Exception {
 
@@ -50,6 +53,9 @@ public class FileUtil {
 
 	}
 
+	/**
+	 * Read UTF-8 text from file path.
+	 */
 	public static String readTextFile(final File file) throws Exception {
 
 		final int chunk = 4;
@@ -78,6 +84,9 @@ public class FileUtil {
 
 	}
 
+	/**
+	 * Write UTF-8 text into file path.
+	 */
 	public static void writeTextFile(final File file, final String text)
 			throws Exception {
 
@@ -125,12 +134,6 @@ public class FileUtil {
 		}
 
 		return dir.delete();
-
-	}
-
-	public static String getClassNameFromClassPath(final String path) {
-
-		return path.replace(File.separator, ".");
 
 	}
 

@@ -36,7 +36,7 @@ import com.carrotgarden.eclipse.fileinstall.util.NatureUtil;
 public abstract class BaseAction implements IObjectActionDelegate {
 
 	/**
-	 * 
+	 * Projects selected by user in UI.
 	 */
 	private final LinkedHashSet<IProject> projectSet = new LinkedHashSet<IProject>();
 

@@ -54,7 +54,7 @@ public class NatureActivateAction extends BaseAction {
 
 				} catch (final Throwable e) {
 
-					Plugin.logErr("Nature activate failure.", e);
+					Plugin.logErrr("Nature activate failure.", e);
 
 				} finally {
 					monitor.done();
