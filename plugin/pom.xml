@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (C) 2010-2013 Andrei Pozolotin <Andrei.Pozolotin@gmail.com> 
+	All rights reserved. Licensed under the OSI BSD License. http://www.opensource.org/licenses/bsd-license.php -->
+<project
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+	xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.barchart.eclipse</groupId>
+		<artifactId>com.barchart.eclipse.fileinstall.a</artifactId>
+		<version>1.0.2-SNAPSHOT</version>
+		<relativePath>../a</relativePath>
+	</parent>
+
+	<groupId>com.barchart.eclipse</groupId>
+	<artifactId>com.barchart.eclipse.fileinstall.plugin</artifactId>
+	<version>1.0.2-SNAPSHOT</version>
+	<packaging>eclipse-plugin</packaging>
+
+	<properties>
+
+		<projectOsgiVersion>4.3.1</projectOsgiVersion>
+
+		<projectTypesafeConfig>1.0.1</projectTypesafeConfig>
+
+	</properties>
+
+	<dependencies>
+
+		<!-- EMBEDDED -->
+
+		<!-- Configuration library. -->
+		<dependency>
+			<groupId>com.typesafe</groupId>
+			<artifactId>config</artifactId>
+			<version>${projectTypesafeConfig}</version>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- OSGI sepecification. -->
+		<dependency>
+			<groupId>org.osgi</groupId>
+			<artifactId>org.osgi.core</artifactId>
+			<version>${projectOsgiVersion}</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.osgi</groupId>
+			<artifactId>org.osgi.compendium</artifactId>
+			<version>${projectOsgiVersion}</version>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- File util. -->
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.4</version>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- PROVIDED -->
+
+		<!-- Logging library. -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+	</dependencies>
+
+	<build>
+
+		<plugins>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<verbose>true</verbose>
+							<includeScope>runtime</includeScope>
+							<overWriteReleases>false</overWriteReleases>
+							<overWriteSnapshots>false</overWriteSnapshots>
+							<overWriteIfNewer>true</overWriteIfNewer>
+							<outputDirectory>target/library</outputDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- <plugin> -->
+			<!-- <groupId>org.eclipse.tycho</groupId> -->
+			<!-- <artifactId>target-platform-configuration</artifactId> -->
+			<!-- <version>${tycho-version}</version> -->
+			<!-- <configuration> -->
+			<!-- <resolver>p2</resolver> -->
+			<!-- <pomDependencies>consider</pomDependencies> -->
+			<!-- </configuration> -->
+			<!-- </plugin> -->
+
+		</plugins>
+
+		<pluginManagement>
+			<plugins>
+
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.apache.maven.plugins</groupId>
+										<artifactId>maven-dependency-plugin</artifactId>
+										<versionRange>[0,)</versionRange>
+										<goals>
+											<goal>validate</goal>
+											<goal>copy</goal>
+											<goal>copy-dependencies</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore />
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+
+			</plugins>
+		</pluginManagement>
+
+	</build>
+
+</project>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (C) 2010-2013 Andrei Pozolotin <Andrei.Pozolotin@gmail.com> 
+	All rights reserved. Licensed under the OSI BSD License. http://www.opensource.org/licenses/bsd-license.php -->
+<!-- Provide default life cycle mapping between Maven and Eclipse. http://wiki.eclipse.org/M2E_plugin_execution_not_covered -->
+<lifecycleMappingMetadata>
+
+	<pluginExecutions>
+
+	</pluginExecutions>
+
+</lifecycleMappingMetadata>

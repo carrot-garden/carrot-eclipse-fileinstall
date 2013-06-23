@@ -1,0 +1,24 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Barchart Eclipse Fileinstall
+Bundle-SymbolicName: com.barchart.eclipse.fileinstall.plugin;singleton:=true
+Bundle-Version: 1.0.2.qualifier
+Bundle-Vendor: Andrei Pozolotin
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-ClassPath: .,
+ target/library/config-1.0.1.jar,
+ target/library/commons-io-2.4.jar,
+ target/library/org.osgi.core-4.3.1.jar,
+ target/library/org.osgi.compendium-4.3.1.jar
+Require-Bundle: org.eclipse.core.resources,
+ org.eclipse.core.runtime,
+ org.eclipse.debug.core,
+ org.eclipse.debug.ui,
+ org.eclipse.ui,
+ org.eclipse.ui.ide,
+ org.eclipse.jdt.core,
+ org.eclipse.jdt.launching,
+ org.eclipse.jdt.debug.ui,
+ org.eclipse.jdt.ui
+Bundle-Activator: com.carrotgarden.eclipse.fileinstall.Plugin
+Bundle-ActivationPolicy: lazy

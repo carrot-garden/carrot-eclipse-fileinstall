@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+
+	<category-def name="com.barchart.eclipse" label="com.barchart.eclipse" />
+	<feature
+		url="features/com.barchart.eclipse.fileinstall.feature_0.0.0.jar"
+		id="com.barchart.eclipse.fileinstall.feature" version="0.0.0">
+		<category name="com.barchart.eclipse" />
+	</feature>
+
+</site>

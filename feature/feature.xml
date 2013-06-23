@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (C) 2010-2012 Andrei Pozolotin <Andrei.Pozolotin@gmail.com>
+
+    All rights reserved. Licensed under the OSI BSD License.
+
+    http://www.opensource.org/licenses/bsd-license.php
+
+-->
+<feature
+      id="com.barchart.eclipse.fileinstall.feature"
+      label="Barchart Eclipse Fileinstall"
+      version="1.0.2.qualifier"
+      provider-name="Andrei Pozolotin">
+
+   <description url="http://www.barchart.com">
+      -
+   </description>
+
+   <copyright url="http://en.wikipedia.org/wiki/Copyleft">
+      be well
+   </copyright>
+
+   <license url="http://www.eclipse.org/legal/epl-v10.html">
+      be well
+   </license>
+
+   <url>
+      <update label="Barchart Eclipse Fileinstall" url="http://eclipse-repository.aws.barchart.com/com.barchart.eclipse.fileinstall/"/>
+   </url>
+
+   <requires>
+      <import plugin="org.eclipse.core.resources" version="3.4.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.core.runtime" version="3.4.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.debug.core"/>
+      <import plugin="org.eclipse.debug.ui" version="3.4.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.ui" version="3.4.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.ui.ide"/>
+      <import plugin="org.eclipse.jdt.core" version="3.4.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.jdt.launching" version="3.4.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.jdt.debug.ui" version="3.4.0" match="greaterOrEqual"/>
+      <import plugin="org.eclipse.jdt.ui"/>
+   </requires>
+
+   <plugin
+         id="com.barchart.eclipse.fileinstall.plugin"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>

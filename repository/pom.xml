@@ -1,0 +1,128 @@
+<!-- Copyright (C) 2010-2012 Andrei Pozolotin <Andrei.Pozolotin@gmail.com> 
+	All rights reserved. Licensed under the OSI BSD License. http://www.opensource.org/licenses/bsd-license.php -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.barchart.eclipse</groupId>
+		<artifactId>com.barchart.eclipse.fileinstall.a</artifactId>
+		<version>1.0.2-SNAPSHOT</version>
+		<relativePath>../a</relativePath>
+	</parent>
+
+	<groupId>com.barchart.eclipse</groupId>
+	<artifactId>com.barchart.eclipse.fileinstall.repository</artifactId>
+	<version>1.0.2-SNAPSHOT</version>
+	<packaging>eclipse-repository</packaging>
+
+	<properties>
+
+		<!-- S3 bucket name. -->
+		<amazonName>eclipse-repository.aws.barchart.com</amazonName>
+
+		<amazonFolder>com.barchart.eclipse.fileinstall</amazonFolder>
+
+	</properties>
+
+	<repositories>
+
+		<!-- <repository> -->
+		<!-- <id>carrot-m2e-scr</id> -->
+		<!-- <layout>p2</layout> -->
+		<!-- <url>http://${amazonName}/${amazonFolderVersion}</url> -->
+		<!-- </repository> -->
+
+	</repositories>
+
+	<build>
+		<plugins>
+
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-packaging-plugin</artifactId>
+				<version>${tycho-version}</version>
+				<executions>
+					<execution>
+						<id>build-qualifier</id>
+						<goals>
+							<goal>build-qualifier</goal>
+						</goals>
+						<phase>validate</phase>
+					</execution>
+				</executions>
+				<configuration>
+					<metadataRepositoryName>${project.parent.artifactId} metadata</metadataRepositoryName>
+					<artifactRepositoryName>${project.parent.artifactId} artifacts</artifactRepositoryName>
+				</configuration>
+			</plugin>
+
+
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-p2-repository-plugin</artifactId>
+				<version>${tycho-version}</version>
+				<configuration>
+					<createArtifactRepository>true</createArtifactRepository>
+					<includeAllDependencies>false</includeAllDependencies>
+					<compress>false</compress>
+				</configuration>
+			</plugin>
+
+		</plugins>
+
+	</build>
+
+	<profiles>
+
+		<!-- Publish updated eclipse repository. -->
+		<profile>
+			<id>publish-eclipse</id>
+			<properties>
+				<serverId>com.barchart.eclipse.s3</serverId>
+				<serverURL>s3://${amazonName}</serverURL>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.kuali.maven.plugins</groupId>
+						<artifactId>wagon-maven-plugin</artifactId>
+						<configuration>
+							<includes>**/*</includes>
+							<serverId>${serverId}</serverId>
+						</configuration>
+						<!-- Download existing artifacts. -->
+						<executions>
+							<execution>
+								<id>download-past</id>
+								<phase>prepare-package</phase>
+								<goals>
+									<goal>download</goal>
+								</goals>
+								<configuration>
+									<url>${serverURL}/${amazonFolder}</url>
+									<toDir>${basedir}/target/repository</toDir>
+								</configuration>
+							</execution>
+							<!-- Upload updated artifacts. -->
+							<execution>
+								<id>upload-next</id>
+								<phase>package</phase>
+								<goals>
+									<goal>upload</goal>
+								</goals>
+								<configuration>
+									<fromDir>${basedir}/target/repository</fromDir>
+									<url>${serverURL}/${amazonFolder}</url>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
+	</profiles>
+
+</project>

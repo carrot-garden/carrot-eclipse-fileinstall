@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (C) 2010-2013 Andrei Pozolotin <Andrei.Pozolotin@gmail.com>
+
+    All rights reserved. Licensed under the OSI BSD License.
+
+    http://www.opensource.org/licenses/bsd-license.php
+
+-->
+<?eclipse version="3.4"?>
+<plugin>
+
+	<extension
+	       point="org.eclipse.core.expressions.definitions">
+	    <definition id="com.carrotgarden.eclipse.fileinstall.enablement">
+	          <adapt type="org.eclipse.core.resources.IResource">
+   				<test forcePluginActivation="true"
+   				   property="org.eclipse.core.resources.projectNature" 
+   				   value="com.carrotgarden.eclipse.fileinstall.nature" />
+	          </adapt>
+	    </definition>
+	</extension>
+ 
+   <extension
+      point="org.eclipse.ui.popupMenus">
+      
+      <objectContribution
+             adaptable="true"
+             objectClass="org.eclipse.core.resources.IResource"
+             id="com.carrotgarden.eclipse.fileinstall.activate">
+		<enablement>
+   			<not>
+				<reference
+				          definitionId="com.carrotgarden.eclipse.fileinstall.enablement">
+				</reference>
+   		   	</not>
+         </enablement>
+         <action
+                  id="com.carrotgarden.eclipse.fileinstall.ui.NatureActivateAction"
+               class="com.carrotgarden.eclipse.fileinstall.ui.NatureActivateAction"
+               icon="image/logo-16x16.png"
+               label="Activate Fileinstall"
+               menubarPath="org.eclipse.ui.projectConfigure/additions">
+         </action>
+      </objectContribution>
+      
+   	  <objectContribution
+             objectClass="org.eclipse.core.resources.IResource"
+             adaptable="true"
+             id="com.carrotgarden.eclipse.fileinstall.menu">
+		<enablement>
+				<reference
+				          definitionId="com.carrotgarden.eclipse.fileinstall.enablement">
+				</reference>
+         </enablement>
+        <menu
+              icon="image/logo-16x16.png"
+              id="com.carrotgarden.eclipse.fileinstall.menu"
+              label="Fileinstall">
+            <separator
+               	name="group1">
+            </separator>
+        </menu> 
+      </objectContribution>
+      
+      <objectContribution
+             objectClass="org.eclipse.core.resources.IResource"
+             adaptable="true"
+             id="com.carrotgarden.eclipse.fileinstall.update">
+		<enablement>
+				<reference
+				          definitionId="com.carrotgarden.eclipse.fileinstall.enablement">
+				</reference>
+         </enablement>
+        <action
+                 id="com.carrotgarden.eclipse.fileinstall.ui.ProjectUpdateAction"
+              class="com.carrotgarden.eclipse.fileinstall.ui.ProjectUpdateAction"
+              enablesFor="+"
+              icon="image/logo-16x16.png"
+              label="Update Project"
+              menubarPath="com.carrotgarden.eclipse.fileinstall.menu/group1">
+         </action>
+      </objectContribution>
+      
+      <objectContribution
+             objectClass="org.eclipse.core.resources.IResource"
+             adaptable="true"
+             id="com.carrotgarden.eclipse.fileinstall.deactivate">
+		<enablement>
+				<reference
+				          definitionId="com.carrotgarden.eclipse.fileinstall.enablement">
+				</reference>
+         </enablement>
+        <action
+                 id="com.carrotgarden.eclipse.fileinstall.ui.NatureDeactivateAction"
+              class="com.carrotgarden.eclipse.fileinstall.ui.NatureDeactivateAction"
+              enablesFor="+"
+              icon="image/logo-16x16.png"
+              label="Deactivate Fileinstall"
+              menubarPath="com.carrotgarden.eclipse.fileinstall.menu/group1">
+         </action>
+      </objectContribution>
+      
+   </extension>
+
+   <extension
+         id="com.carrotgarden.eclipse.fileinstall.nature"
+         point="org.eclipse.core.resources.natures">
+		      <runtime>
+		         <run
+		               class="com.carrotgarden.eclipse.fileinstall.Nature">
+		         </run>
+		      </runtime>
+		      <requires-nature
+		            id="org.eclipse.jdt.core.javanature">
+		      </requires-nature>
+   </extension>
+
+   <extension
+         point="org.eclipse.ui.startup">
+      <startup
+            class="com.carrotgarden.eclipse.fileinstall.Plugin"></startup>
+   </extension>
+   
+   <extension
+         point="org.eclipse.jdt.core.compilationParticipant">
+		<compilationParticipant
+	         id="com.carrotgarden.eclipse.fileinstall.Builder"
+	         class="com.carrotgarden.eclipse.fileinstall.Builder"
+	         requiredSourceLevel="1.6">
+		</compilationParticipant>         
+   </extension>
+   
+</plugin>
