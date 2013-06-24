@@ -117,17 +117,44 @@ public class Manager {
 	workerMap = new ConcurrentHashMap<String, Project.Worker>();
 
 	/**
-	 * Handle worker build result.
+	 * Handle worker build start.
 	 * 
 	 * @see Builder
 	 */
-	public void buildFinished(final IJavaProject java) {
+	public void builderAboutToBuild(final IJavaProject java) {
 		final String name = java.getProject().getName();
 		final Project.Worker worker = workerMap.get(name);
 		if (worker == null) {
 			return;
 		}
-		handleUpdate(worker);
+		doBuildInitiate(worker);
+	}
+
+	/**
+	 * Handle worker build finish.
+	 * 
+	 * @see Builder
+	 */
+	public void builderBuildFinished(final IJavaProject java) {
+		final String name = java.getProject().getName();
+		final Project.Worker worker = workerMap.get(name);
+		if (worker == null) {
+			return;
+		}
+		doBuildTerminate(worker);
+	}
+
+	/**
+	 * Handle worker clean start.
+	 * 
+	 * @see Builder
+	 */
+	public void builderCleanStarting(final IJavaProject java) {
+		final String name = java.getProject().getName();
+		final Project.Worker worker = workerMap.get(name);
+		if (worker == null) {
+			return;
+		}
 	}
 
 	/**
@@ -154,6 +181,80 @@ public class Manager {
 		}
 
 		return total;
+	}
+
+	/**
+	 * Run worker pre-build.
+	 */
+	private void doBuildInitiate(final Project.Worker worker) {
+
+		final String message = "Manager#doBuildInitiate: worker: " + worker;
+		Plugin.logOK(message);
+
+		workerDeactivate(worker.name());
+
+	}
+
+	/**
+	 * Run worker post-build.
+	 */
+	private void doBuildTerminate(final Project.Worker worker) {
+
+		final String message = "Manager#doBuildTerminate: worker: " + worker;
+		Plugin.logInfo(message);
+
+		final String name = worker.name();
+
+		worker.manifestChange();
+		worker.severityChange();
+
+		final Check check = check();
+
+		int countPositive = 0;
+		int countNegative = 0;
+
+		if (check.eclipseCheckIsWorkerBuildSuccess()) {
+			if (worker.isBuildSuccess()) {
+				countPositive++;
+				Plugin.logOK("Manager#doBuildTerminate: build success: "
+						+ worker);
+			} else {
+				Plugin.logOK("Manager#doBuildTerminate: build failure: "
+						+ worker);
+				countNegative++;
+			}
+		}
+
+		if (check.eclipseCheckIsWorkerManifestPresent()) {
+			if (worker.isManifestPresent()) {
+				countPositive++;
+				Plugin.logOK("Manager#doBuildTerminate: manifest present: "
+						+ worker);
+			} else {
+				Plugin.logOK("Manager#doBuildTerminate: manifest missing: "
+						+ worker);
+				countNegative++;
+			}
+		}
+
+		if (countPositive == 0 && countNegative == 0) {
+			Plugin.logOK("Manager#doBuildTerminate: change ignored: " + worker);
+			workerActivate(name);
+			return;
+		}
+
+		if (countNegative > 0) {
+			Plugin.logOK("Manager#doBuildTerminate: change negative: " + worker);
+			workerDeactivate(name);
+			return;
+		}
+
+		if (countPositive > 0) {
+			Plugin.logOK("Manager#doBuildTerminate: change positive: " + worker);
+			workerActivate(name);
+			return;
+		}
+
 	}
 
 	/**
@@ -204,28 +305,6 @@ public class Manager {
 
 				monitor.done();
 			}
-		});
-	}
-
-	/**
-	 * Handle worker activate/deactivate job.
-	 */
-	private void handleUpdate(final Project.Worker worker) {
-		JobUtil.schedule(new EclipseRunnable("Manager handle update.") {
-			@Override
-			public void doit(final IProgressMonitor monitor)
-					throws CoreException {
-
-				final String message = "Manager#handleUpdate: worker: "
-						+ worker;
-				monitor.beginTask(message, 1);
-				Plugin.logInfo(message);
-
-				workerUpdate(worker);
-
-				monitor.done();
-			}
-
 		});
 	}
 
@@ -352,7 +431,7 @@ public class Manager {
 				count++;
 			}
 		}
-		Plugin.logInfo("Manager#workerActivate " + count + " / " + workerName);
+		Plugin.logOK("Manager#workerActivate " + count + " / " + workerName);
 		return count > 0;
 	}
 
@@ -372,7 +451,7 @@ public class Manager {
 				Plugin.logInfo("Manager#workerCreate: old: " + worker);
 			}
 
-			workerUpdate(worker);
+			doBuildTerminate(worker);
 
 		}
 	}
@@ -389,7 +468,7 @@ public class Manager {
 				count++;
 			}
 		}
-		Plugin.logInfo("Manager#workerDeactivate " + count + " / " + workerName);
+		Plugin.logOK("Manager#workerDeactivate " + count + " / " + workerName);
 		return count > 0;
 	}
 
@@ -408,6 +487,7 @@ public class Manager {
 	/**
 	 * Process worker update.
 	 */
+	@SuppressWarnings("unused")
 	private void workerUpdate(final Project.Worker worker) {
 
 		final String name = worker.name();

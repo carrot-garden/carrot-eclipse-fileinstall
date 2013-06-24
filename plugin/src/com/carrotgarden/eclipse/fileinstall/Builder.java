@@ -16,13 +16,14 @@ import org.eclipse.jdt.core.compiler.CompilationParticipant;
 public class Builder extends CompilationParticipant {
 
 	@Override
-	public boolean isActive(final IJavaProject project) {
+	public int aboutToBuild(final IJavaProject project) {
 		final Plugin instance = Plugin.instance();
 		if (instance == null) {
-			return false;
+			return READY_FOR_BUILD;
 		}
-		/** React only to registered worker projects. */
-		return instance.manager().hasWorker(project);
+		/** Notify registered worker projects. */
+		instance.manager().builderAboutToBuild(project);
+		return READY_FOR_BUILD;
 	}
 
 	@Override
@@ -32,7 +33,27 @@ public class Builder extends CompilationParticipant {
 			return;
 		}
 		/** Notify registered worker projects. */
-		instance.manager().buildFinished(project);
+		instance.manager().builderBuildFinished(project);
+	}
+
+	@Override
+	public void cleanStarting(final IJavaProject project) {
+		final Plugin instance = Plugin.instance();
+		if (instance == null) {
+			return;
+		}
+		/** Notify registered worker projects. */
+		instance.manager().builderCleanStarting(project);
+	}
+
+	@Override
+	public boolean isActive(final IJavaProject project) {
+		final Plugin instance = Plugin.instance();
+		if (instance == null) {
+			return false;
+		}
+		/** React only to registered worker projects. */
+		return instance.manager().hasWorker(project);
 	}
 
 }

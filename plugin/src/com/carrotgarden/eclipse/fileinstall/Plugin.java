@@ -89,12 +89,19 @@ public class Plugin extends AbstractUIPlugin implements IStartup {
 		log(status);
 	}
 
+	/**
+	 * Plug-in version.
+	 */
+	public static String version() {
+		return instance().getBundle().getVersion().toString();
+	}
+
 	private volatile BundleContext context;
 
 	/**
 	 * Plug-in console.
 	 */
-	private final Console logConsole = ConsoleUtil.console("fileinstall");
+	private final Console logConsole = ConsoleUtil.console("Fileinstall");
 
 	/**
 	 * Plug-in console listener.
@@ -148,14 +155,14 @@ public class Plugin extends AbstractUIPlugin implements IStartup {
 		this.context = context;
 		PLUGIN = this;
 		PLUGIN.getLog().addLogListener(logListener);
-		logInfo("plugin start");
+		logInfo("plugin start: " + version());
 		manager.start();
 	}
 
 	@Override
 	public void stop(final BundleContext context) throws Exception {
 		manager.stop();
-		logInfo("plugin stop");
+		logInfo("plugin stop: " + version());
 		PLUGIN.getLog().removeLogListener(logListener);
 		super.stop(context);
 		PLUGIN = null;
