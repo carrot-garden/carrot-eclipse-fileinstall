@@ -141,7 +141,7 @@ public class Project {
 
 			try {
 				FileUtil.writeTextFile(file, tempalte);
-				Plugin.logInfo("Project#confCreate file: " + file);
+				Plugin.logOK("Project#confCreate file: " + file);
 			} catch (final Throwable e) {
 				Plugin.logErrr("Project#confCreate failure", e);
 			}
@@ -183,7 +183,7 @@ public class Project {
 
 			file.delete();
 
-			Plugin.logInfo("Project#confDelete file: " + file);
+			Plugin.logOK("Project#confDelete file: " + file);
 		}
 
 		/**

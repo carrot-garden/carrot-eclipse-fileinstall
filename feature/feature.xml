@@ -11,7 +11,7 @@
 <feature
       id="com.barchart.eclipse.fileinstall.feature"
       label="Barchart Eclipse Fileinstall"
-      version="1.0.2.qualifier"
+      version="1.0.3.qualifier"
       provider-name="Andrei Pozolotin">
 
    <description url="http://www.barchart.com">
